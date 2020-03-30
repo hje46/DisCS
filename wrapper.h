@@ -1,4 +1,3 @@
-#include "arduino_secrets.h"
 #include "playbackEngine.h" // this incluce contains the include for "compilationEngine.h" thus is it not required here
 #include "frequencies.h"
 int wifiStat[] = {0, 0}; //0 = off (led off), 1 = connecting, 2 = connected (led on), 3 = failed (led flashing). 4 = complete [1] refers to LED status

@@ -1,3 +1,4 @@
+#include "arduino_secrets.h"
 //Based on web server API by Tom Igoe on created 25 Nov 2012
 
 //Required Libraries and Files
@@ -6,7 +7,7 @@
 #include <WiFiNINA.h>
 #include "wrapper.h"
 #include "discord.h"
-#include "arduino_secrets.h" //Contains Passwords etc. 
+//Contains Passwords etc. 
 
 //Fetch Secret Data
 
@@ -124,33 +125,6 @@ void printWiFiData() {
   //printMacAddress(mac);
 }
 
-void closeHTTP(WiFiClient client) {
-  // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-  // and a content-type so the client knows what's coming, then a blank line:
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-type:text/html");
-  client.println();
-
-  // the content of the HTTP response follows the header:
-  int q = 0;
-  client.print("<p>digitalWrite</p>");
-  while (q <= 13)
-  {
-    client.print("<a href=\"/digitalWrite/" + String(q) + "/HIGH/run\">" + String(q) + " H </a><span>/</span>" + "<a href=\"/digitalWrite/" + String(q) + "/LOW/run\">" + String(q) + " L </a><span>/</span>");
-    //html = html + "<a href=\"/digitalWrite/" + String(q) + "/LOW/run\">" + String(q) + " L </a><span>/</span>";
-    q = q + 1;
-  }
-  client.print("<p>pinMode</p>");
-  q = 0;
-  while (q <= 13)
-  {
-    client.print("<a href=\"/digitalWrite/" + String(q) + "/HIGH/run\">" + String(q) + " H </a><span>/</span>" + "<a href=\"/digitalWrite/" + String(q) + "/LOW/run\">" + String(q) + " L </a><span>/</span>");
-    q = q + 1;
-  }
-  // The HTTP response ends with another blank line:
-  client.println();
-  
-}
 
 void loop() {
   processStatus();
@@ -167,51 +141,119 @@ void loop() {
             // if the current line is blank, you got two newline characters in a row.
             // that's the end of the client HTTP request, so send a response:
             if (currentLine.length() == 0) {
-              closeHTTP(client);
+              sendHTTP(client);
               // break out of the while loop:
               break;
-            } else {    // if you got a newline, then clear currentLine:
+            } else {    // if you got a newline, parse then clear currentLine:
+              parseHTTP(currentLine);
               currentLine = "";
             }
           } else if (c != '\r') {  // if you got anything else but a carriage return character,
             currentLine += c;      // add it to the end of the currentLine
           }
-  
-          // Check to see if the client request was a command
-          if (currentLine.endsWith(";;") and millis() > lastMillis + 25) {
-            int m = 0;
-            int n = 0;
-            String args[] = {"", "", "", "", "", ""};
-            while (m < currentLine.length()) {
-              if (String(currentLine[m]) == " " || String(currentLine[m]) == ";") { n = n + 1; } else { args[n] = args[n] + currentLine[m]; }
-              m = m + 1;
-            }
-            Serial.println("CMD >> " + currentLine);
-            processCMD(args);
-            lastMillis = millis();
-          }
-          else if (currentLine.endsWith("/run") and millis() > lastMillis + 25) {
-            int m = 0;
-            int n = 0;
-            String args[] = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
-            while (m < currentLine.length()) {
-              if (String(currentLine[m]) == "/" || String(currentLine[m]) == ";") { n = n + 1; } else { args[n] = args[n] + currentLine[m]; }
-              m = m + 1;
-              lastMillis = millis();
-            }
-            Serial.println("WEB >> " + currentLine);
-            n = 3;
-            while (n < 24) {
-              args[n-3] = args[n];
-              n = n + 1;
-            }
-            args[20] = ""; args[21] = ""; args[23] = ""; args[24] = "";
-            processCMD(args);
-          }
         }
+        
       }
       // close the connection:
       client.stop();
       Serial.println("client disonnected");
     }
+}
+
+
+////
+
+
+void parseHTTP(String currentLine) {
+  String args[] = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+  // Check to see if the client request was a command
+  if (currentLine.endsWith(";;") and millis() > lastMillis + 25) {
+    int m = 0;
+    int n = 0;
+    while (m < currentLine.length()) {
+      if (String(currentLine[m]) == " " || String(currentLine[m]) == ";") { n = n + 1; } else { args[n] = args[n] + currentLine[m]; }
+      m = m + 1;
+    }
+    Serial.println("CMD >> " + currentLine);
+    processCMD(args);
+    lastMillis = millis();
+  }
+  else if (currentLine.startsWith ("GET") and currentLine.endsWith("/run") and millis() > lastMillis + 25) {
+    int m = 0;
+    int n = 0;
+    while (m < currentLine.length()) {
+      if (String(currentLine[m]) == "/" || String(currentLine[m]) == ";") { n = n + 1; } else { args[n] = args[n] + currentLine[m]; }
+      m = m + 1;
+      lastMillis = millis();
+    }
+    Serial.println("WEB >> " + currentLine);
+    n = 3;
+    while (n < 24) {
+      args[n-3] = args[n];
+      n = n + 1;
+    }
+    args[20] = ""; args[21] = ""; args[23] = ""; args[24] = "";
+    processCMD(args);
+  }
+  else if (currentLine.startsWith("GET /HTP?") and millis() > lastMillis + 25) {
+    Serial.println("HTP >> " + currentLine);
+    String cmdConstruct = "";
+    int z = 9;
+    while (String(currentLine[z]) != String("x") and z != currentLine.length()) {
+      cmdConstruct = cmdConstruct + currentLine[z];
+      z = z + 1;
+    }
+    Serial.println(cmdConstruct);
+    args[0] = cmdConstruct;
+    int q = 1;
+    z = z + 2;
+    while (z - 2 != currentLine.length()) {
+      cmdConstruct = "";
+      while (String(currentLine[z]) != String("&") and z != currentLine.length() and String(currentLine[z]) != String(" ")) {
+        cmdConstruct = cmdConstruct + currentLine[z];
+        z = z + 1;
+      }
+      Serial.println("HTA >> " + cmdConstruct);
+      args[q] = cmdConstruct;
+      q = q + 1;
+      while (z != currentLine.length() and String(currentLine[z]) != String("x")) { z++; }
+      z = z + 2;
+    }
+    processCMD(args);
+  }
+}
+
+void sendHTTP(WiFiClient client) {
+  // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
+  // and a content-type so the client knows what's coming, then a blank line:
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-type:text/html");
+  client.println();
+
+  // the content of the HTTP response follows the header:
+  int q = 0;
+  //client.print("<p>digitalWrite</p>");
+  client.print("<p></p><form action=\"/HTP\"> <label for=\"digitalWritex\">Pin #</label> <input type=\"number\" id=\"digitalWritex\" name=\"digitalWritex\" value=\"0\">  <label for=\"x\">State</label> <select id=\"x\" name=\"x\"><option value=\"HIGH\">HIGH</option><option value=\"LOW\">LOW</option></select> <input type=\"submit\" value=\"digitalWrite\"> </form>");
+  client.print("<p></p><form action=\"/HTP\"> <label for=\"pinModex\">Pin #</label> <input type=\"number\" id=\"pinModex\" name=\"pinModex\" value=\"0\">  <label for=\"x\">State</label> <select id=\"x\" name=\"x\"><option value=\"INPUT\">INPUT</option><option value=\"OUTPUT\">OUTPUT</option></select> <input type=\"submit\" value=\"pinMode\"> </form>");
+  /*while (q <= 13)
+  {
+    client.print("<a href=\"/digitalWrite/" + String(q) + "/HIGH/run\">" + String(q) + " H </a><span>/</span>" + "<a href=\"/digitalWrite/" + String(q) + "/LOW/run\">" + String(q) + " L </a><span>/</span>");
+    q = q + 1;
+  }
+  client.print("<p>pinMode</p>");
+  q = 0;
+  while (q <= 13)
+  {
+    client.print("<a href=\"/pinMode/" + String(q) + "/INPUT/run\">" + String(q) + " I </a><span>/</span>" + "<a href=\"/pinMode/" + String(q) + "/OUTPUT/run\">" + String(q) + " O </a><span>/</span>");
+    q = q + 1;
+  }*/
+  
+  client.print("<p></p><form action=\"/HTP\"> <label for=\"playNotex\">Play a Note Now  | Frequency (Hz)</label> <input type=\"number\" id=\"playNotex\" name=\"playNotex\" value=\"440\"> <label for=\"x\">Duration (ms)</label> <input type=\"number\" id=\"x\" name=\"x\" value=\"250\"><input type=\"submit\" value=\"Play\"> </form>");
+  client.print("<p></p><form action=\"/HTP\"> <label for=\"addNotex\">Add Note to Song | Frequency (Hz)</label> <input type=\"number\" id=\"addNotex\" name=\"addNotex\" value=\"440\"> <label for=\"x\">Duration (ms)</label> <input type=\"number\" id=\"x\" name=\"x\" value=\"250\"><input type=\"submit\" value=\"Add\"> </form>");
+  client.print("<p></p><form action=\"/HTP\"> <label for=\"pointerLocx\">Song Edit Cursor | Location</label> <input type=\"number\" id=\"pointerLocx\" name=\"pointerLocx\" value=\"0\"> <input type=\"submit\" value=\"Move Cursor\"> </form>");
+  client.print("<p></p><form action=\"/HTP\"> <label for=\"playSongx\">Play the Song    | Start Position</label> <input type=\"number\" id=\"playSongx\" name=\"playSongx\" value=\"0\"> <input type=\"submit\" value=\"Play\"> </form>");
+  
+  // The HTTP response ends with another blank line:
+  client.println();
+  
 }
