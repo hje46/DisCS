@@ -11,6 +11,8 @@ void playTone(int buzzer, unsigned int note, int len) {
 }
 
 void playSong(int startPos) {
+  int inLoop = 0;
+  int loopedFrom = 0;
   if (startPos == "") { startPos = 0; }
   int oldLoc = pointerLoc;
   pointerLoc = startPos;
@@ -22,7 +24,7 @@ void playSong(int startPos) {
     line[1] = song[pointerLoc][1];
     line[2] = song[pointerLoc][2];
     if (line[0] == "") { break; } else {
-      if (line[0] == 1) {
+      if (line[0] == 0) {
         //Lawrence's other bit here
       } else {
         //Harry's stuff here
