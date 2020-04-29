@@ -1,4 +1,4 @@
-int song[512][2] = {};
+int song[512][3] = {};
 int pointerLoc = 0;
 
 void addNote(unsigned int note, int len) {
