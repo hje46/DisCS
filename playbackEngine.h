@@ -1,6 +1,7 @@
 #include "frequencies.h"
 #include "compilationEngine.h"
 #define speaker 10 // pin no. for speaker
+int xOver = 499;
 
 
 //Lawrence's playNote void here (replacement for Oliver's placeholder void)
